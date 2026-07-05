@@ -17,6 +17,8 @@
       align-items: center;
       justify-content: center;
       background: #f3f4f6;
+      color: #111827;
+      transition: background-color 0.2s ease, color 0.2s ease;
     }
 
     .calculator {
@@ -25,6 +27,27 @@
       border-radius: 12px;
       background: #ffffff;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+      transition: background-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .toolbar {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 10px;
+    }
+
+    .theme-toggle {
+      height: 32px;
+      padding: 0 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 999px;
+      font-size: 14px;
+      background: #f9fafb;
+      color: #111827;
+    }
+
+    .theme-toggle:hover {
+      background: #e5e7eb;
     }
 
     .display {
@@ -81,10 +104,72 @@
     .clear:hover {
       background: #f87171;
     }
+
+    body.dark {
+      background: #111827;
+      color: #f9fafb;
+    }
+
+    body.dark .calculator {
+      background: #1f2937;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+
+    body.dark .display {
+      border-color: #4b5563;
+      background: #111827;
+      color: #f9fafb;
+    }
+
+    body.dark button {
+      background: #374151;
+      color: #f9fafb;
+    }
+
+    body.dark button:hover {
+      background: #4b5563;
+    }
+
+    body.dark .theme-toggle {
+      border-color: #4b5563;
+      background: #111827;
+      color: #f9fafb;
+    }
+
+    body.dark .theme-toggle:hover {
+      background: #1f2937;
+    }
+
+    body.dark .operator {
+      background: #4338ca;
+    }
+
+    body.dark .operator:hover {
+      background: #4f46e5;
+    }
+
+    body.dark .equals {
+      background: #16a34a;
+    }
+
+    body.dark .equals:hover {
+      background: #22c55e;
+    }
+
+    body.dark .clear {
+      background: #dc2626;
+    }
+
+    body.dark .clear:hover {
+      background: #ef4444;
+    }
   </style>
 </head>
 <body>
   <div class="calculator">
+    <div class="toolbar">
+      <button id="themeToggle" class="theme-toggle" type="button">Тёмная тема</button>
+    </div>
     <input id="display" class="display" type="text" value="0" readonly />
     <div class="buttons">
       <button class="clear" data-action="clear">C</button>
@@ -114,8 +199,26 @@
   <script>
     const display = document.getElementById("display");
     const buttons = document.querySelector(".buttons");
+    const themeToggle = document.getElementById("themeToggle");
+    const THEME_KEY = "calculator-theme";
 
     let expression = "";
+
+    function setTheme(theme) {
+      const isDark = theme === "dark";
+      document.body.classList.toggle("dark", isDark);
+      if (themeToggle instanceof HTMLButtonElement) {
+        themeToggle.textContent = isDark ? "Светлая тема" : "Тёмная тема";
+      }
+    }
+
+    function getInitialTheme() {
+      const savedTheme = localStorage.getItem(THEME_KEY);
+      if (savedTheme === "dark" || savedTheme === "light") {
+        return savedTheme;
+      }
+      return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
 
     function updateDisplay(value) {
       display.value = value || "0";
@@ -184,6 +287,16 @@
         appendValue(value);
       }
     });
+
+    if (themeToggle instanceof HTMLButtonElement) {
+      themeToggle.addEventListener("click", () => {
+        const nextTheme = document.body.classList.contains("dark") ? "light" : "dark";
+        setTheme(nextTheme);
+        localStorage.setItem(THEME_KEY, nextTheme);
+      });
+    }
+
+    setTheme(getInitialTheme());
   </script>
 </body>
 </html>
