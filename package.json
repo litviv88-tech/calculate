@@ -1,0 +1,28 @@
+{
+  "name": "calculate",
+  "version": "1.0.0",
+  "description": "Инвистицинонный калькулятор",
+  "main": "index.js",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/litviv88-tech/calculate.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/litviv88-tech/calculate/issues"
+  },
+  "homepage": "https://github.com/litviv88-tech/calculate#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.61.1",
+    "vitest": "^4.1.9"
+  }
+}
