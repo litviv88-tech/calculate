@@ -1,120 +1,185 @@
 import { test, expect } from "@playwright/test";
+import {
+  openCalculator,
+  clickDigit,
+  clickOperator,
+  clickEquals,
+  clickClear,
+  expectDisplay,
+  enterExpression,
+} from "./helpers/calculator.js";
 
-const CALCULATOR_URL = "/calculator.html";
-
-async function openCalculator(page) {
-  await page.goto(CALCULATOR_URL);
-  await page.evaluate(() => {
-    localStorage.clear();
-    location.reload();
-  });
-  await expect(page.locator("#display")).toHaveValue("0");
-}
-
-async function clickDigit(page, digit) {
-  await page.locator(`.buttons button[data-value="${digit}"]`).click();
-}
-
-async function clickOperator(page, operator) {
-  await page.locator(`.buttons button[data-value="${operator}"]`).click();
-}
-
-async function clickEquals(page) {
-  await page.locator('.buttons button[data-action="equals"]').click();
-}
-
-async function clickClear(page) {
-  await page.locator('.buttons button[data-action="clear"]').click();
-}
-
-async function expectDisplay(page, value) {
-  await expect(page.locator("#display")).toHaveValue(value);
-}
-
-test.describe("Калькулятор в браузере", () => {
+test.describe("Калькулятор", () => {
   test.beforeEach(async ({ page }) => {
     await openCalculator(page);
   });
 
-  test("отображает начальное значение 0", async ({ page }) => {
-    await expectDisplay(page, "0");
+  test.describe("Ввод чисел", () => {
+    test("должен отображать введенное число", async ({ page }) => {
+      await clickDigit(page, "5");
+      await expectDisplay(page, "5");
+    });
+
+    test("должен отображать многоразрядное число", async ({ page }) => {
+      await clickDigit(page, "1");
+      await clickDigit(page, "2");
+      await clickDigit(page, "3");
+      await expectDisplay(page, "123");
+    });
+
+    test("должен отображать ноль при первом вводе", async ({ page }) => {
+      await expectDisplay(page, "0");
+    });
+
+    test("должен заменять ноль на первую цифру", async ({ page }) => {
+      await clickDigit(page, "7");
+      await expectDisplay(page, "7");
+    });
+
+    test("должен добавлять десятичную точку", async ({ page }) => {
+      await clickDigit(page, "1");
+      await clickDigit(page, ".");
+      await expectDisplay(page, "1.");
+    });
+
+    test("должен добавлять цифры после десятичной точки", async ({ page }) => {
+      await clickDigit(page, "1");
+      await clickDigit(page, ".");
+      await clickDigit(page, "5");
+      await expectDisplay(page, "1.5");
+    });
+
+    test("не должен добавлять вторую десятичную точку в одном числе", async ({ page }) => {
+      await clickDigit(page, "1");
+      await clickDigit(page, ".");
+      await clickDigit(page, "2");
+      await clickDigit(page, ".");
+      await expectDisplay(page, "1.2");
+    });
+
+    test("должен добавлять десятичную точку к нулю", async ({ page }) => {
+      await clickDigit(page, ".");
+      await expectDisplay(page, ".");
+    });
   });
 
-  test("вводит числа через кнопки", async ({ page }) => {
-    await clickDigit(page, "1");
-    await clickDigit(page, "2");
-    await clickDigit(page, "3");
+  test.describe("Операции", () => {
+    test("должен добавлять оператор сложения", async ({ page }) => {
+      await clickDigit(page, "2");
+      await clickOperator(page, "+");
+      await expectDisplay(page, "2+");
+    });
 
-    await expectDisplay(page, "123");
+    test("должен добавлять оператор вычитания", async ({ page }) => {
+      await clickDigit(page, "2");
+      await clickOperator(page, "-");
+      await expectDisplay(page, "2-");
+    });
+
+    test("должен добавлять оператор умножения", async ({ page }) => {
+      await clickDigit(page, "2");
+      await clickOperator(page, "*");
+      await expectDisplay(page, "2*");
+    });
+
+    test("должен добавлять оператор деления", async ({ page }) => {
+      await clickDigit(page, "2");
+      await clickOperator(page, "/");
+      await expectDisplay(page, "2/");
+    });
+
+    test("не должен добавлять оператор в пустое выражение", async ({ page }) => {
+      await clickOperator(page, "+");
+      await expectDisplay(page, "0");
+    });
+
+    test("должен заменять последний оператор при повторном нажатии", async ({ page }) => {
+      await clickDigit(page, "2");
+      await clickOperator(page, "+");
+      await clickOperator(page, "-");
+      await expectDisplay(page, "2-");
+    });
   });
 
-  test("складывает два числа и показывает результат", async ({ page }) => {
-    await clickDigit(page, "2");
-    await clickOperator(page, "+");
-    await clickDigit(page, "3");
-    await clickEquals(page);
+  test.describe("Вычисление", () => {
+    test("должен складывать два числа", async ({ page }) => {
+      await enterExpression(page, "2+3");
+      await clickEquals(page);
+      await expectDisplay(page, "5");
+    });
 
-    await expectDisplay(page, "5");
+    test("должен вычитать числа", async ({ page }) => {
+      await enterExpression(page, "9-4");
+      await clickEquals(page);
+      await expectDisplay(page, "5");
+    });
+
+    test("должен умножать числа", async ({ page }) => {
+      await enterExpression(page, "6*7");
+      await clickEquals(page);
+      await expectDisplay(page, "42");
+    });
+
+    test("должен делить числа", async ({ page }) => {
+      await enterExpression(page, "8/2");
+      await clickEquals(page);
+      await expectDisplay(page, "4");
+    });
+
+    test("должен вычислять выражение с десятичными числами", async ({ page }) => {
+      await enterExpression(page, "1.5+2.5");
+      await clickEquals(page);
+      await expectDisplay(page, "4");
+    });
+
+    test("должен вычислять цепочку операций", async ({ page }) => {
+      await enterExpression(page, "2+3*4");
+      await clickEquals(page);
+      await expectDisplay(page, "14");
+    });
+
+    test("должен показывать ошибку при делении на ноль", async ({ page }) => {
+      await enterExpression(page, "5/0");
+      await clickEquals(page);
+      await expectDisplay(page, "Infinity");
+    });
   });
 
-  test("вычитает числа и показывает результат", async ({ page }) => {
-    await clickDigit(page, "9");
-    await clickOperator(page, "-");
-    await clickDigit(page, "4");
-    await clickEquals(page);
+  test.describe("Очистка", () => {
+    test("должен сбрасывать выражение кнопкой C", async ({ page }) => {
+      await enterExpression(page, "7+1");
+      await expectDisplay(page, "7+1");
 
-    await expectDisplay(page, "5");
+      await clickClear(page);
+
+      await expectDisplay(page, "0");
+    });
+
+    test("должен позволять вводить новое выражение после сброса", async ({ page }) => {
+      await enterExpression(page, "9*9");
+      await clickClear(page);
+      await clickDigit(page, "3");
+      await expectDisplay(page, "3");
+    });
   });
 
-  test("умножает числа и показывает результат", async ({ page }) => {
-    await clickDigit(page, "6");
-    await clickOperator(page, "*");
-    await clickDigit(page, "7");
-    await clickEquals(page);
+  test.describe("Журнал операций", () => {
+    test("должен добавлять запись после вычисления", async ({ page }) => {
+      await enterExpression(page, "2+3");
+      await clickEquals(page);
 
-    await expectDisplay(page, "42");
-  });
+      await expect(page.locator("#historyList li").first()).toHaveText("2+3 = 5");
+      await expect(page.locator("#historyEmpty")).toBeHidden();
+    });
 
-  test("делит числа и показывает результат", async ({ page }) => {
-    await clickDigit(page, "8");
-    await clickOperator(page, "/");
-    await clickDigit(page, "2");
-    await clickEquals(page);
+    test("должен очищать журнал по кнопке Очистить", async ({ page }) => {
+      await enterExpression(page, "1+1");
+      await clickEquals(page);
 
-    await expectDisplay(page, "4");
-  });
+      await page.locator("#historyClear").click();
 
-  test("поддерживает десятичные числа", async ({ page }) => {
-    await clickDigit(page, "1");
-    await clickDigit(page, ".");
-    await clickDigit(page, "5");
-    await clickOperator(page, "+");
-    await clickDigit(page, "2");
-    await clickDigit(page, ".");
-    await clickDigit(page, "5");
-    await clickEquals(page);
-
-    await expectDisplay(page, "4");
-  });
-
-  test("кнопка C сбрасывает ввод и возвращает 0", async ({ page }) => {
-    await clickDigit(page, "7");
-    await clickOperator(page, "+");
-    await clickDigit(page, "1");
-    await expectDisplay(page, "7+1");
-
-    await clickClear(page);
-
-    await expectDisplay(page, "0");
-  });
-
-  test("после вычисления добавляет запись в журнал операций", async ({ page }) => {
-    await clickDigit(page, "2");
-    await clickOperator(page, "+");
-    await clickDigit(page, "3");
-    await clickEquals(page);
-
-    await expect(page.locator("#historyList li").first()).toHaveText("2+3 = 5");
-    await expect(page.locator("#historyEmpty")).toBeHidden();
+      await expect(page.locator("#historyList li")).toHaveCount(0);
+      await expect(page.locator("#historyEmpty")).toBeVisible();
+    });
   });
 });
