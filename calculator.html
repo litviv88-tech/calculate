@@ -105,6 +105,54 @@
       background: #f87171;
     }
 
+    .history {
+      margin-top: 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      background: #f9fafb;
+      padding: 10px;
+    }
+
+    .history-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .history-title {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .history-clear {
+      height: 28px;
+      padding: 0 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      background: #e5e7eb;
+    }
+
+    .history-list {
+      margin: 0;
+      padding-left: 18px;
+      max-height: 130px;
+      overflow-y: auto;
+      font-size: 14px;
+    }
+
+    .history-list li {
+      margin-bottom: 4px;
+      word-break: break-all;
+    }
+
+    .history-empty {
+      margin: 0;
+      font-size: 13px;
+      color: #6b7280;
+    }
+
     body.dark {
       background: #111827;
       color: #f9fafb;
@@ -119,6 +167,15 @@
       border-color: #4b5563;
       background: #111827;
       color: #f9fafb;
+    }
+
+    body.dark .history {
+      border-color: #4b5563;
+      background: #111827;
+    }
+
+    body.dark .history-empty {
+      color: #9ca3af;
     }
 
     body.dark button {
@@ -163,6 +220,14 @@
     body.dark .clear:hover {
       background: #ef4444;
     }
+
+    body.dark .history-clear {
+      background: #374151;
+    }
+
+    body.dark .history-clear:hover {
+      background: #4b5563;
+    }
   </style>
 </head>
 <body>
@@ -194,15 +259,29 @@
 
       <button data-value="0" style="grid-column: span 4;">0</button>
     </div>
+    <div class="history">
+      <div class="history-header">
+        <p class="history-title">Журнал операций</p>
+        <button id="historyClear" class="history-clear" type="button">Очистить</button>
+      </div>
+      <ol id="historyList" class="history-list"></ol>
+      <p id="historyEmpty" class="history-empty">Пока нет операций</p>
+    </div>
   </div>
 
   <script>
     const display = document.getElementById("display");
     const buttons = document.querySelector(".buttons");
     const themeToggle = document.getElementById("themeToggle");
+    const historyList = document.getElementById("historyList");
+    const historyEmpty = document.getElementById("historyEmpty");
+    const historyClear = document.getElementById("historyClear");
     const THEME_KEY = "calculator-theme";
+    const HISTORY_KEY = "calculator-history";
+    const MAX_HISTORY_ITEMS = 10;
 
     let expression = "";
+    let historyItems = [];
 
     function setTheme(theme) {
       const isDark = theme === "dark";
@@ -253,16 +332,55 @@
       updateDisplay("0");
     }
 
+    function renderHistory() {
+      if (!(historyList instanceof HTMLOListElement) || !(historyEmpty instanceof HTMLParagraphElement)) return;
+      historyList.innerHTML = "";
+
+      historyItems.forEach((item) => {
+        const li = document.createElement("li");
+        li.textContent = item;
+        historyList.appendChild(li);
+      });
+
+      historyEmpty.style.display = historyItems.length ? "none" : "block";
+    }
+
+    function saveHistory() {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(historyItems));
+    }
+
+    function loadHistory() {
+      try {
+        const savedHistory = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+        if (Array.isArray(savedHistory)) {
+          historyItems = savedHistory.filter((item) => typeof item === "string").slice(0, MAX_HISTORY_ITEMS);
+        }
+      } catch (error) {
+        historyItems = [];
+      }
+      renderHistory();
+    }
+
+    function addHistoryItem(text) {
+      historyItems.unshift(text);
+      historyItems = historyItems.slice(0, MAX_HISTORY_ITEMS);
+      renderHistory();
+      saveHistory();
+    }
+
     function calculate() {
       if (!expression || isLastCharOperator(expression)) return;
+      const expressionBeforeEval = expression;
 
       try {
         const result = Function("return " + expression)();
         expression = String(result);
         updateDisplay(expression);
+        addHistoryItem(expressionBeforeEval + " = " + expression);
       } catch (error) {
         expression = "";
         updateDisplay("Ошибка");
+        addHistoryItem(expressionBeforeEval + " = Ошибка");
       }
     }
 
@@ -296,6 +414,15 @@
       });
     }
 
+    if (historyClear instanceof HTMLButtonElement) {
+      historyClear.addEventListener("click", () => {
+        historyItems = [];
+        renderHistory();
+        saveHistory();
+      });
+    }
+
+    loadHistory();
     setTheme(getInitialTheme());
   </script>
 </body>
