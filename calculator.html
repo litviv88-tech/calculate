@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Простой калькулятор</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f3f4f6;
+    }
+
+    .calculator {
+      width: 320px;
+      padding: 16px;
+      border-radius: 12px;
+      background: #ffffff;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    }
+
+    .display {
+      width: 100%;
+      height: 56px;
+      margin-bottom: 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      text-align: right;
+      font-size: 24px;
+      padding: 8px 12px;
+      background: #f9fafb;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    button {
+      height: 48px;
+      border: none;
+      border-radius: 8px;
+      font-size: 18px;
+      cursor: pointer;
+      background: #e5e7eb;
+    }
+
+    button:hover {
+      background: #d1d5db;
+    }
+
+    .operator {
+      background: #c7d2fe;
+    }
+
+    .operator:hover {
+      background: #a5b4fc;
+    }
+
+    .equals {
+      background: #86efac;
+    }
+
+    .equals:hover {
+      background: #4ade80;
+    }
+
+    .clear {
+      background: #fca5a5;
+    }
+
+    .clear:hover {
+      background: #f87171;
+    }
+  </style>
+</head>
+<body>
+  <div class="calculator">
+    <input id="display" class="display" type="text" value="0" readonly />
+    <div class="buttons">
+      <button class="clear" data-action="clear">C</button>
+      <button class="operator" data-value="/">/</button>
+      <button class="operator" data-value="*">*</button>
+      <button class="operator" data-value="-">-</button>
+
+      <button data-value="7">7</button>
+      <button data-value="8">8</button>
+      <button data-value="9">9</button>
+      <button class="operator" data-value="+">+</button>
+
+      <button data-value="4">4</button>
+      <button data-value="5">5</button>
+      <button data-value="6">6</button>
+      <button data-value=".">.</button>
+
+      <button data-value="1">1</button>
+      <button data-value="2">2</button>
+      <button data-value="3">3</button>
+      <button class="equals" data-action="equals">=</button>
+
+      <button data-value="0" style="grid-column: span 4;">0</button>
+    </div>
+  </div>
+
+  <script>
+    const display = document.getElementById("display");
+    const buttons = document.querySelector(".buttons");
+
+    let expression = "";
+
+    function updateDisplay(value) {
+      display.value = value || "0";
+    }
+
+    function isLastCharOperator(text) {
+      return /[+\-*/]$/.test(text);
+    }
+
+    function appendValue(value) {
+      if (value === ".") {
+        const parts = expression.split(/[+\-*/]/);
+        const currentNumber = parts[parts.length - 1];
+        if (currentNumber.includes(".")) return;
+      }
+
+      if (/[+\-*/]/.test(value)) {
+        if (!expression) return;
+        if (isLastCharOperator(expression)) {
+          expression = expression.slice(0, -1) + value;
+          updateDisplay(expression);
+          return;
+        }
+      }
+
+      expression += value;
+      updateDisplay(expression);
+    }
+
+    function clearAll() {
+      expression = "";
+      updateDisplay("0");
+    }
+
+    function calculate() {
+      if (!expression || isLastCharOperator(expression)) return;
+
+      try {
+        const result = Function("return " + expression)();
+        expression = String(result);
+        updateDisplay(expression);
+      } catch (error) {
+        expression = "";
+        updateDisplay("Ошибка");
+      }
+    }
+
+    buttons.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLButtonElement)) return;
+
+      const action = target.dataset.action;
+      const value = target.dataset.value;
+
+      if (action === "clear") {
+        clearAll();
+        return;
+      }
+
+      if (action === "equals") {
+        calculate();
+        return;
+      }
+
+      if (value) {
+        appendValue(value);
+      }
+    });
+  </script>
+</body>
+</html>
